@@ -3,3 +3,4 @@ venv/
 *.pyc
 **/data/models/
 test_files/
+.vscode/
