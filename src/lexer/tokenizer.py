@@ -44,8 +44,8 @@ class SimpleTokenizer:
                 if match:
                     value = match.group(0)      # Returns the part which matched
                     
-                    # Skip whitespace
-                    if token_type not in [TOKEN_TYPES['WHITESPACE']]:
+                    # Skip whitespace and comments
+                    if token_type not in [TOKEN_TYPES['WHITESPACE']] and token_type not in [TOKEN_TYPES['COMMENT']]:
                         # Check if identifier is actually a keyword
                         if token_type == TOKEN_TYPES['IDENTIFIER']:
                             if value in KEYWORDS or value.upper() in KEYWORDS:
