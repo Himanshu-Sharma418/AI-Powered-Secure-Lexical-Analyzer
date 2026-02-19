@@ -5,13 +5,12 @@ from .grammar import KEYWORDS, OPERATORS, DELIMITERS, TOKEN_TYPES
 Token = namedtuple('Token', ['type', 'value', 'line', 'column'])
 
 class SimpleTokenizer:
-    """Basic tokenizer without ML integration"""
+    # Basic tokenizer without ML integration
     
     def __init__(self):
         # Define token patterns (simplified)
         self.patterns = [
-            (TOKEN_TYPES['COMMENT'], r'#.*'),       # Python/bash comments
-            (TOKEN_TYPES['COMMENT'], r'\-\-.*'),    # SQL Comments
+            (TOKEN_TYPES['COMMENT'], r'#.*'),       # Python comments
             (TOKEN_TYPES['STRING'], r'"[^"]*"'),    # Double quoted strings
             (TOKEN_TYPES['STRING'], r"'[^']*'"),    # Single quoted strings   
             (TOKEN_TYPES['NUMBER'], r'\d+\.?\d*'),  # Numbers
