@@ -1,8 +1,7 @@
 import sys
-from pathlib import Path
+import os
 
-parent_dir = Path(__file__).resolve().parent.parent
-sys.path.append(str(parent_dir))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from lexer.tokenizer import SimpleTokenizer
 
