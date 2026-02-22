@@ -5,7 +5,7 @@ from .grammar import KEYWORDS, OPERATORS, DELIMITERS, TOKEN_TYPES
 Token = namedtuple('Token', ['type', 'value', 'line', 'column'])
 
 class SimpleTokenizer:
-    # Basic tokenizer without ML integration
+    """Basic tokenizer without ML integration"""
     
     def __init__(self):
         # Define token patterns (simplified)

@@ -50,8 +50,17 @@ class FeatureExtractor:
         # Check for security keywords
         for token in tokens:
             token_upper = token.value.upper()
+    
+            # Direct keyword match
             if token_upper in self.security_keywords['sql']:
                 features['has_sql_keyword'] = 1
+    
+            # Check inside string literals
+            if token.type == 'STRING':
+                for keyword in self.security_keywords['sql']:
+                    if keyword in token_upper:
+                        features['has_sql_keyword'] = 1
+                        break
             if token.value in self.security_keywords['command']:
                 features['has_command_keyword'] = 1
             if token.value in self.security_keywords['xss']:
