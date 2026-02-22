@@ -21,6 +21,12 @@ class FeatureExtractor:
                    'document.cookie', 'location.href', 'eval', 
                    'setTimeout', 'setInterval'}
         }
+        
+    def contains_keyword(self, text, keywords):
+        for keyword in keywords:
+            if keyword in text or keyword.upper() in text or keyword.lower() in text:
+                return True
+        return False
     
     def extract_features(self, code):
         """Extract features from code string"""
@@ -54,18 +60,20 @@ class FeatureExtractor:
             # Direct keyword match
             if token_upper in self.security_keywords['sql']:
                 features['has_sql_keyword'] = 1
-    
-            # Check inside string literals
-            if token.type == 'STRING':
-                for keyword in self.security_keywords['sql']:
-                    if keyword in token_upper:
-                        features['has_sql_keyword'] = 1
-                        break
             if token.value in self.security_keywords['command']:
                 features['has_command_keyword'] = 1
             if token.value in self.security_keywords['xss']:
                 features['has_xss_keyword'] = 1
-        
+    
+            # Check inside string literals
+            if token.type == 'STRING':
+                if (self.contains_keyword(token.value, self.security_keywords['sql'])):
+                    features['has_sql_keyword'] = 1
+                if (self.contains_keyword(token.value, self.security_keywords['command'])):
+                    features['has_command_keyword'] = 1
+                if (self.contains_keyword(token.value, self.security_keywords['xss'])):
+                    features['has_xss_keyword'] = 1
+            
         # Check for string concatenation with variables
         code_lower = code.lower()
         if '+' in token_values and any(t.type == 'IDENTIFIER' for t in tokens):
