@@ -5,14 +5,12 @@ Supports: variables, strings, SQL-like queries, basic functions
 
 # Language keywords (web-focused)
 KEYWORDS = {
-    'False', 'None', 'True', 'and', 'as', 'assert', 'async', 
-    'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 
-    'else', 'except', 'finally', 'for', 'from', 'global', 'if', 
-    'import', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 
-    'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
-    'SELECT', 'FROM', 'WHERE', 'INSERT', 'INTO', 'VALUES',
-    'UPDATE', 'DELETE', 'DROP', 'UNION',
-    'echo', 'print', 'system', 'exec', 'eval'
+    "abstract", "continue", "for", "new", "switch", "assert", "default", "goto", 
+    "package", "synchronized", "boolean", "do", "if", "private", "this", "break", 
+    "double", "implements", "protected", "throw", "byte", "else", "import", "public", 
+    "throws", "case", "enum", "instanceof", "return", "transient", "catch", "extends", "int", 
+    "short", "try", "char", "final", "interface", "static", "void", "class", "finally", "long", 
+    "strictfp", "volatile", "const", "float", "native", "super", "while"
 }
 
 # Operators

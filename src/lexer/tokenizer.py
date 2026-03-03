@@ -10,7 +10,8 @@ class SimpleTokenizer:
     def __init__(self):
         # Define token patterns (simplified)
         self.patterns = [
-            (TOKEN_TYPES['COMMENT'], r'#.*'),       # Python comments
+            (TOKEN_TYPES['COMMENT'], r'//.*'),       # Java comments
+            (TOKEN_TYPES['COMMENT'], r'/\*[\s\S]*?\*/'),     # Java multiline comments
             (TOKEN_TYPES['STRING'], r'"[^"]*"'),    # Double quoted strings
             (TOKEN_TYPES['STRING'], r"'[^']*'"),    # Single quoted strings   
             (TOKEN_TYPES['NUMBER'], r'\d+\.?\d*'),  # Numbers
