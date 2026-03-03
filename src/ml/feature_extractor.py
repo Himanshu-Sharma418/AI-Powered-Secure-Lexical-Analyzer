@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -48,6 +49,8 @@ class FeatureExtractor:
             'has_string_concat': 0,  # String + variable pattern
             'has_direct_exec': 0,    # system(), eval()
             'has_inline_script': 0,  # <script> tags
+
+            'sql_and_concat_same_line': 0,
         }
         
         # Analyze tokens
@@ -97,6 +100,36 @@ class FeatureExtractor:
         # Check for inline scripts
         if '<script>' in code_lower or 'javascript:' in code_lower:
             features['has_inline_script'] = 1
+
+        # SQL keyword and string concatenation on the same line
+        lines = code.split('\n')
+        sql_keywords_lower = {kw.lower() for kw in self.security_keywords['sql']}
+        # Patterns for string concatenation: "..." + var or var + "..."
+        # Supports both double and single quotes, handles escaped quotes inside strings.
+        concat_pattern = r'''
+            (["'])(?:(?=(\\?))\2.)*?\1   # a quoted string (non-greedy)
+            \s*\+\s*                     # plus sign with optional whitespace
+            [a-zA-Z_][a-zA-Z0-9_]*       # an identifier
+        '''
+        concat_pattern2 = r'''
+            [a-zA-Z_][a-zA-Z0-9_]*       # an identifier
+            \s*\+\s*                     # plus sign with optional whitespace
+            (["'])(?:(?=(\\?))\2.)*?\3   # a quoted string
+        '''
+        # Combine patterns and compile with re.VERBOSE to allow comments and whitespace
+        combined_pattern = re.compile(f'{concat_pattern}|{concat_pattern2}', re.VERBOSE)
+
+        for line in lines:
+            # Check for SQL keyword in this line (case‑insensitive)
+            line_lower = line.lower()
+            has_sql = any(kw in line_lower for kw in sql_keywords_lower)
+            if not has_sql:
+                continue
+
+            # Check for string concatenation pattern in the same line
+            if combined_pattern.search(line):
+                features['sql_and_concat_same_line'] = 1
+                break
         
         return features
 
@@ -104,14 +137,12 @@ class FeatureExtractor:
 if __name__ == "__main__":
     extractor = FeatureExtractor()
     
-    test_cases = [
-        ('name = "John";', 'Safe code'),
-        ('query = "SELECT * FROM users WHERE id=\'" + input + "\'";', 'SQL Injection'),
-        ('os.system("rm " + filename);', 'Command Injection'),
-    ]
-    
-    for code, description in test_cases:
-        features = extractor.extract_features(code)
-        print(f"\n{description}:")
-        for key, value in features.items():
-            print(f"  {key}: {value}")
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], "r") as f:
+            code = f.read()
+    else:
+        code = 'query = "SELECT * FROM users WHERE id=\'" + input + "\'";'
+        
+    features = extractor.extract_features(code)
+    for key, value in features.items():
+        print(f"    {key}: {value}")
