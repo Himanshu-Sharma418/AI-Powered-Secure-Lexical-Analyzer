@@ -101,11 +101,13 @@ class FeatureExtractor:
         if '<script>' in code_lower or 'javascript:' in code_lower:
             features['has_inline_script'] = 1
 
-        # SQL keyword and string concatenation on the same line
+        # --- Line‑level vulnerability detection ---
         lines = code.split('\n')
         sql_keywords_lower = {kw.lower() for kw in self.security_keywords['sql']}
-        # Patterns for string concatenation: "..." + var or var + "..."
-        # Supports both double and single quotes, handles escaped quotes inside strings.
+        cmd_keywords_lower = {kw.lower() for kw in self.security_keywords['command']}
+        xss_keywords_lower = {kw.lower() for kw in self.security_keywords['xss']}
+
+        # Patterns for string concatenation
         concat_pattern = r'''
             (["'])(?:(?=(\\?))\2.)*?\1   # a quoted string (non-greedy)
             \s*\+\s*                     # plus sign with optional whitespace
@@ -116,20 +118,40 @@ class FeatureExtractor:
             \s*\+\s*                     # plus sign with optional whitespace
             (["'])(?:(?=(\\?))\2.)*?\3   # a quoted string
         '''
-        # Combine patterns and compile with re.VERBOSE to allow comments and whitespace
         combined_pattern = re.compile(f'{concat_pattern}|{concat_pattern2}', re.VERBOSE)
 
-        for line in lines:
-            # Check for SQL keyword in this line (case‑insensitive)
-            line_lower = line.lower()
-            has_sql = any(kw in line_lower for kw in sql_keywords_lower)
-            if not has_sql:
-                continue
+        inline_patterns = ['<script>', 'javascript:']
 
-            # Check for string concatenation pattern in the same line
-            if combined_pattern.search(line):
-                features['sql_and_concat_same_line'] = 1
-                break
+        sqli_lines = []
+        cmd_lines = []
+        xss_lines = []
+
+        for line_num, line in enumerate(lines, start=1):
+            line_lower = line.lower()
+
+            # SQL injection
+            has_sql = any(kw in line_lower for kw in sql_keywords_lower)
+            if has_sql and combined_pattern.search(line):
+                sqli_lines.append(line_num)
+
+            # Command injection
+            has_cmd = any(kw in line_lower for kw in cmd_keywords_lower)
+            has_exec = any(p in line for p in exec_patterns)
+            if has_cmd and has_exec:
+                cmd_lines.append(line_num)
+
+            # XSS
+            has_xss = any(kw in line_lower for kw in xss_keywords_lower)
+            has_inline = any(p in line_lower for p in inline_patterns)
+            if has_xss and has_inline:
+                xss_lines.append(line_num)
+
+        # Update binary flags based on line‑level detection
+        features['sql_and_concat_same_line'] = 1 if sqli_lines else 0
+        # The following line lists are new
+        features['sqli_lines'] = sqli_lines
+        features['cmd_injection_lines'] = cmd_lines
+        features['xss_lines'] = xss_lines
         
         return features
 

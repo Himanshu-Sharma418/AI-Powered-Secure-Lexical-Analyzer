@@ -6,13 +6,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from ml.feature_extractor import FeatureExtractor
 
 class StaticAnalyzer:
-    """Performs security analysis of code based on some static rules"""
+    """Performs security analysis of code based on static rules"""
     
     def __init__(self):
         self.extractor = FeatureExtractor()
         
     def static_analyze(self, code):
-        """Tells if a code is insecure or not based on its features"""
+        """Tells if a code is insecure or not based on its features.
+           Returns (vulne_dict, line_info_dict)."""
         features = self.extractor.extract_features(code)
         
         vulne = {
@@ -22,17 +23,27 @@ class StaticAnalyzer:
             'XSS': 0
         }
         
-        if features['sql_and_concat_same_line'] == 1:
+        line_info = {}
+
+        # SQL Injection
+        if features.get('sqli_lines'):
             vulne['SQL Injection'] = 1
             vulne['Safe'] = 0
-        if features['has_command_keyword'] == 1 and features['has_direct_exec'] == 1:
+            line_info['SQL Injection'] = features['sqli_lines']
+
+        # Command Injection
+        if features.get('cmd_injection_lines'):
             vulne['Command Injection'] = 1
             vulne['Safe'] = 0
-        if features['has_xss_keyword'] == 1 and features['has_inline_script'] == 1:
+            line_info['Command Injection'] = features['cmd_injection_lines']
+
+        # XSS
+        if features.get('xss_lines'):
             vulne['XSS'] = 1
             vulne['Safe'] = 0
+            line_info['XSS'] = features['xss_lines']
             
-        return vulne
+        return vulne, line_info
     
 if __name__ == "__main__":
     analyzer = StaticAnalyzer()
@@ -41,13 +52,17 @@ if __name__ == "__main__":
         with open(sys.argv[1], "r") as f:
             code = f.read()
     else:
-        code = 'query = "SELECT * FROM users WHERE id=\'" + input + "\'";'
+        code = """String userInput = getParameter("id");
+String query = "SELECT * FROM users WHERE id='" + userInput + "'";
+System.out.println(query);
+Runtime.getRuntime().exec("cmd /c " + userInput);
+document.write("<script>" + userInput + "</script>");"""
         
-    vulne = analyzer.static_analyze(code)
+    vulne, line_info = analyzer.static_analyze(code)
     if vulne['Safe'] == 1:
         print("There were no vulnerabilities detected")
     else:
-        for key, value in vulne.items():
-            if key == 'Safe': continue
-            if value == 1:
-                print(f"This code may be suceptible to {key}")
+        for vuln_name, lines in line_info.items():
+            if lines:
+                line_list = ', '.join(str(l) for l in lines)
+                print(f"Possible {vuln_name} at line {line_list}")
