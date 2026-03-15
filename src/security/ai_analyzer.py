@@ -35,6 +35,19 @@ class AIAnalyzer:
         # Combine
         return hstack([manual_vector, tfidf_vector])
 
+    def predict_snippet(self, snippet):
+        """Directly predicts the vulnerability type for a given code snippet."""
+        if not self.initialized:
+            return "Safe", 0.0
+            
+        X = self._get_features(snippet)
+        probabilities = self.model.predict_proba(X)[0]
+        prediction_idx = np.argmax(probabilities)
+        prediction_label = self.le.classes_[prediction_idx]
+        confidence = probabilities[prediction_idx]
+        
+        return prediction_label, float(confidence)
+
     def analyze(self, code, window_size=10, step_size=5):
         """
         Analyzes code using a sliding window to detect 'vulnerable parts'.
