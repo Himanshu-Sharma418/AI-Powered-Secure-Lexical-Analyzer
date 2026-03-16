@@ -1,11 +1,9 @@
 import os
 import sys
 
-# Ensure project root is in the Python path
-sys.path.append(os.getcwd())
-
-from src.security.hybrid_analyzer import HybridAnalyzer
-from src.utils.report_generator import ReportGenerator
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from security.hybrid_analyzer import HybridAnalyzer
+from utils.report_generator import ReportGenerator
 
 class SecurityAuditor:
     """Main Auditor class that orchestrates analysis and reporting"""

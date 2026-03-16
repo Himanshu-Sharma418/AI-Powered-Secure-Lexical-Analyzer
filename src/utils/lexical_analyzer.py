@@ -3,7 +3,10 @@ Simple lexer demonstration
 """
 
 import sys
-from src.lexer.tokenizer import SimpleTokenizer
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from lexer.tokenizer import SimpleTokenizer
 
 def main():
     if len(sys.argv) > 1:

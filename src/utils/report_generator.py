@@ -1,5 +1,4 @@
 import json
-import os
 
 class ReportGenerator:
     """Generates security reports with remediation advice for detected vulnerabilities"""
@@ -117,4 +116,4 @@ if __name__ == "__main__":
     }]
     
     gen = ReportGenerator()
-    gen.generate_console_report("Sample.java", dummy_results)
+    gen.generate_console_report(dummy_results)
