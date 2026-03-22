@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Lexical Analyzer | AI Auditor</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #22c55e;
+            --card-bg: #1e293b;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Side: Editor */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            background: #0b1121;
+        }
+
+        #code-input {
+            flex: 1;
+            background: transparent;
+            color: #d1d5db;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        .controls {
+            padding-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Right Side: Results */
+        .results-panel {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Cards & UI Elements */
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .vuln-card {
+            margin: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: #0f172a;
+            border-left: 4px solid var(--danger);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .vuln-card.potential {
+            border-left-color: var(--warning);
+        }
+
+        .vuln-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .type-badge {
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .line-badge {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .confidence-meter {
+            height: 4px;
+            background: #334155;
+            margin: 10px 0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .snippet-box {
+            background: #1e293b;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            border: 1px solid #334155;
+            white-space: pre-wrap;
+        }
+
+        .remediation-box {
+            font-size: 13px;
+            background: rgba(59, 130, 246, 0.05);
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 2px solid var(--accent);
+        }
+
+        .status-summary {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: #0f172a;
+            margin: 1rem;
+            border-radius: 8px;
+        }
+
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-val {
+            display: block;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #loader {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <span style="font-weight: 800; font-size: 1.2rem; color: var(--accent);">SECURE</span>
+                <span style="font-weight: 400; font-size: 1.2rem; color: var(--text-dim);">LEXICAL ANALYZER</span>
+            </div>
+            <div class="actions">
+                <span id="scan-status" style="font-size: 12px; color: var(--text-dim); margin-right: 1rem;">System
+                    Ready</span>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Left: Editor -->
+            <div class="editor-container">
+                <textarea id="code-input" spellcheck="false" placeholder="// Paste your Java code here..."></textarea>
+                <div class="controls">
+                    <button id="scan-btn" class="btn">Analyze Code</button>
+                    <div id="loader" style="font-size: 13px; color: var(--accent);">Processing with Hybrid AI...</div>
+                </div>
+            </div>
+
+            <!-- Right: Results -->
+            <div class="results-panel" id="results-panel">
+                <div class="panel-header">
+                    <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Security Findings</h3>
+                </div>
+
+                <div id="welcome-message" style="padding: 2rem; text-align: center; color: var(--text-dim);">
+                    <p>Enter code and click "Analyze" to begin the AI-powered security audit.</p>
+                </div>
+
+                <div id="summary-container"></div>
+                <div id="cards-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const scanBtn = document.getElementById('scan-btn');
+        const codeInput = document.getElementById('code-input');
+        const cardsContainer = document.getElementById('cards-container');
+        const summaryContainer = document.getElementById('summary-container');
+        const welcomeMsg = document.getElementById('welcome-message');
+        const loader = document.getElementById('loader');
+        const scanStatus = document.getElementById('scan-status');
+
+        scanBtn.addEventListener('click', async () => {
+            const code = codeInput.value;
+            if (!code.trim()) return;
+
+            // UI State
+            welcomeMsg.style.display = 'none';
+            loader.style.display = 'block';
+            scanBtn.disabled = true;
+            scanStatus.innerText = 'Scanning...';
+            cardsContainer.innerHTML = '';
+            summaryContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+
+                const data = await response.json();
+                renderResults(data);
+            } catch (err) {
+                console.error(err);
+                alert('Analysis failed. Check backend connection.');
+            } finally {
+                loader.style.display = 'none';
+                scanBtn.disabled = false;
+                scanStatus.innerText = 'Analysis Complete';
+            }
+        });
+
+        function renderResults(data) {
+            if (data.results.length === 0) {
+                welcomeMsg.style.display = 'block';
+                welcomeMsg.innerHTML = '<p style="color: var(--success)">No vulnerabilities detected. Good job!</p>';
+                return;
+            }
+
+            // Summary
+            summaryContainer.innerHTML = `
+                <div class="status-summary">
+                    <div class="stat"><span class="stat-val">${data.summary.total}</span><span class="stat-label">Total</span></div>
+                    <div class="stat"><span class="stat-val" style="color: var(--danger)">${data.summary.vulnerable}</span><span class="stat-label">Critical</span></div>
+                    <div class="stat"><span class="stat-val" style="color: var(--warning)">${data.summary.potential}</span><span class="stat-label">Potential</span></div>
+                </div>
+            `;
+
+            // Cards
+            data.results.forEach(res => {
+                const isPotential = res.status === 'Potentially Vulnerable';
+                const card = document.createElement('div');
+                card.className = `vuln-card ${isPotential ? 'potential' : ''}`;
+
+                card.innerHTML = `
+                    <div class="vuln-header">
+                        <span class="type-badge">${res.type}</span>
+                        <span class="line-badge">Line ${res.line}</span>
+                    </div>
+                    <div style="font-size: 14px; font-weight: 600; margin: 5px 0;">${res.status}</div>
+                    <div class="confidence-meter">
+                        <div class="confidence-fill" style="width: ${res.confidence * 100}%"></div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-dim)">AI Confidence: ${(res.confidence * 100).toFixed(1)}%</div>
+                    
+                    <div class="snippet-box">${res.snippet}</div>
+                    
+                    <div class="remediation-box">
+                        <div style="font-weight: 700; color: var(--accent); margin-bottom: 5px;">Fix Suggestion:</div>
+                        ${res.remediation.title}
+                        <div style="margin-top: 5px; font-size: 12px; opacity: 0.8;">${res.remediation.fix}</div>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
+            });
+        }
+
+        // Add some default code for demo
+        codeInput.value = `public class DatabaseTest {
+    public void getUser(String userId) {
+        // Vulnerable SQL Injection
+        String sql = "SELECT * FROM users WHERE id = '" + userId + "'";
+        db.execute(sql);
+    }
+}`;
+    </script>
+</body>
+
+</html>
