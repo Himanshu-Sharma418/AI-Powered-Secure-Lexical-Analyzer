@@ -1,7 +1,8 @@
 import json
+from collections import defaultdict
 
 class ReportGenerator:
-    """Generates security reports with remediation advice for detected vulnerabilities"""
+    """Generates security reports with remediation advice"""
     
     def __init__(self):
         # Professional remediation database
@@ -50,7 +51,7 @@ class ReportGenerator:
         }
 
     def generate_console_report(self, results):
-        """Prints a detailed remediation report to the console"""
+        """Prints a remediation report to the console"""
         if not results:
             print("No vulnerabilities detected.")
             return
@@ -59,24 +60,31 @@ class ReportGenerator:
         print("SECURITY ANALYSIS REPORT")
         print("=" * 80)
 
-        for i, r in enumerate(results, 1):
-            vuln_type = r['type']
-            solution = self.solutions.get(vuln_type, {})
+        # Group results by vulnerability type
+        grouped_results = defaultdict(list)
+        for r in results:
+            grouped_results[r['type']].append(r)
+
+        for vuln_type, occurrences in grouped_results.items():
+            print(f"\n>>> VULNERABILITY TYPE: {vuln_type} ({len(occurrences)} occurrences)")
+            print("-" * 80)
             
-            print(f"{i}. [{r['status']}] {vuln_type} at Line {r['line']}")
-            print(f"   Detected Code: {r['snippet']}")
-            print(f"   AI Confidence: {r['confidence']:.2%}")
-            print("-" * 40)
+            # List all occurrences first
+            for i, occ in enumerate(occurrences, 1):
+                status_str = f"[{occ['status']}]"
+                print(f"   {i}. Line {occ['line']:<4} | {status_str:<25} | Confidence: {occ['confidence']:.2%}")
+                print(f"      Code: {occ['snippet']}")
             
+            # Provide remediation advice ONLY ONCE for this type
+            solution = self.solutions.get(vuln_type)
             if solution:
-                print(f"   REMEDIATION: {solution['title']}")
+                print(f"\n   --- REMEDIATION FOR {vuln_type.upper()} ---")
+                print(f"   Title:       {solution['title']}")
                 print(f"   Description: {solution['description']}")
-                print(f"   Recommended Fix: {solution['fix']}")
+                print(f"   Recommended: {solution['fix']}")
                 print("\n   Code Example:")
                 for line in solution['example']:
                     print(f"      {line}")
-            else:
-                print("   No specific remediation template available for this type.")
             
             print("-" * 80)
 
@@ -87,33 +95,25 @@ class ReportGenerator:
                 'total_vulnerabilities': len(results),
                 'high_confidence': sum(1 for r in results if r['status'] == 'Vulnerable')
             },
-            'findings': []
+            'findings': results,
+            'remediation_database': self.solutions
         }
-
-        for r in results:
-            finding = {
-                'type': r['type'],
-                'line': r['line'],
-                'status': r['status'],
-                'confidence': r['confidence'],
-                'snippet': r['snippet'],
-                'remediation': self.solutions.get(r['type'], {})
-            }
-            report_data['findings'].append(finding)
 
         with open(output_file, 'w') as f:
             json.dump(report_data, f, indent=4)
         print(f"JSON report saved to: {output_file}")
 
 if __name__ == "__main__":
-    # Example usage
-    dummy_results = [{
-        'type': 'SQL Injection',
-        'line': 42,
-        'status': 'Vulnerable',
-        'confidence': 0.89,
-        'snippet': 'query = "SELECT * FROM users WHERE id=" + id;'
-    }]
+    # Example usage for testing
+    dummy_results = [
+        {
+            'type': 'SQL Injection',
+            'line': 10,
+            'status': 'Vulnerable',
+            'confidence': 0.95,
+            'snippet': 'query = "SELECT * FROM users WHERE id=" + id;'
+        }
+    ]
     
     gen = ReportGenerator()
     gen.generate_console_report(dummy_results)

@@ -6,3 +6,5 @@ test_files/
 .vscode/
 datasets/
 src/ml/train_op.txt
+docs/
+src/utils/benchmark*
