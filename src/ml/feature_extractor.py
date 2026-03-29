@@ -17,10 +17,10 @@ class FeatureExtractor:
             'sql': {'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'UNION', 
                    'WHERE', 'FROM', 'INTO', 'VALUES'},
             'command': {'system', 'exec', 'eval', 'popen', 'subprocess', 
-                       'os.', 'shell', 'sh'},
+                       'os.', 'shell', 'sh', 'Runtime', 'ProcessBuilder'},
             'xss': {'document.write', 'innerHTML', 'outerHTML', 
                    'document.cookie', 'location.href', 'eval', 
-                   'setTimeout', 'setInterval'}
+                   'setTimeout', 'setInterval', 'out.print', 'writer.print', 'response.getwriter'}
         }
         
     def contains_keyword(self, text, keywords):
@@ -106,7 +106,7 @@ class FeatureExtractor:
         sql_keywords_lower = {kw.lower() for kw in self.security_keywords['sql']}
         cmd_keywords_lower = {kw.lower() for kw in self.security_keywords['command']}
         xss_keywords_lower = {kw.lower() for kw in self.security_keywords['xss']}
-
+        
         # Patterns for string concatenation
         concat_pattern = r'''
             (["'])(?:(?=(\\?))\2.)*?\1   # a quoted string (non-greedy)
@@ -120,7 +120,7 @@ class FeatureExtractor:
         '''
         combined_pattern = re.compile(f'{concat_pattern}|{concat_pattern2}', re.VERBOSE)
 
-        inline_patterns = ['<script>', 'javascript:']
+        xss_patterns = ['<script>', 'javascript:', 'out.print', 'writer.print', 'out.append']
 
         sqli_lines = []
         cmd_lines = []
@@ -142,13 +142,12 @@ class FeatureExtractor:
 
             # XSS
             has_xss = any(kw in line_lower for kw in xss_keywords_lower)
-            has_inline = any(p in line_lower for p in inline_patterns)
-            if has_xss and has_inline:
+            has_xss_p = any(p in line_lower for p in xss_patterns)
+            if (has_xss or has_xss_p) and combined_pattern.search(line):
                 xss_lines.append(line_num)
 
         # Update binary flags based on line‑level detection
         features['sql_and_concat_same_line'] = 1 if sqli_lines else 0
-        # The following line lists are new
         features['sqli_lines'] = sqli_lines
         features['cmd_injection_lines'] = cmd_lines
         features['xss_lines'] = xss_lines
