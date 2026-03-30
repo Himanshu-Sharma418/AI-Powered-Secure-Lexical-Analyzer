@@ -53,7 +53,14 @@ The system operates in a three-stage pipeline:
    pip install -r requirements.txt
    ```
 
-4. Train the Model (Required before first use)
+## First-time Setup
+In order to run the analyzers, the following steps have to followed:
+
+1. **Download a dataset:** A dataset containing vulnerable code (SQL Injections, Command Injecions, and Cross-Site Scripting) as well as Safe code has to be downloaded and saved into the `datasets/` folder. The dataset must be in CSS format.
+
+2. **Modify code if required:** Modify the `preprocess.py` and `train.py` to be compatible with your dataset. Make changes to the training file name and the column names according to what is in your dataset.
+
+3. **Train the Model:** Run the following script to preprocess the data and train the model
    ```bash
    python3 src/ml/preprocess.py
    python3 src/ml/train.py
