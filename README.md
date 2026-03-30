@@ -1,39 +1,39 @@
-# Secure Lexical Analyzer: Hybrid AI-Powered Security Auditor
+# AI Powered Secure Lexical Analyzer
 
-An advanced static analysis tool that combines Deterministic Rule-Based Detection with Machine Learning Verification (Random Forest) to identify SQL Injection, XSS, and Command Injection vulnerabilities in Java source code.
+An advanced analysis tool that combines Deterministic Rule-Based Detection with Machine Learning Verification (Random Forest) to identify SQL Injection, XSS, and Command Injection vulnerabilities in Java source codes.
 
 ## Key Features
 
-*   Hybrid Analysis Pipeline: Uses a high-speed Lexical Analyzer to find "hotspots" and a Random Forest model to verify them.
-*   Surgical Precision: AI only analyzes the specific context around suspicious lines, reducing false positives.
-*   Actionable Remediation: Automatically generates professional security advice and "Secure Code" examples for every finding.
-*   Modern Web Dashboard: A sleek, dark-mode interface for real-time code auditing.
-*   Performance Benchmarked: Proven to be 5.4x faster than traditional sliding-window AI scanners.
+*   **Hybrid Analysis Pipeline:** Uses a high-speed Lexical Analyzer to find "hotspots" and a Random Forest model to verify them.
+*   **Surgical Precision:** AI only analyzes the specific context around suspicious lines, reducing false positives.
+*   **Sanitization Suggestions:** Automatically generates security advice and "Secure Code" examples for every finding.
+*   **Modern Web Dashboard:** A sleek, dark-mode interface for real-time code auditing.
+*   **Performance Benchmarked:** Proven to be 5.4x faster than traditional sliding-window AI scanners.
 
 ## Tech Stack
 
 ### Backend & AI
-*   Python 3.12: Core logic and analysis engine.
-*   Scikit-Learn: Random Forest implementation and TF-IDF vectorization.
-*   Flask: Web server and REST API for the dashboard.
-*   Joblib: Model serialization and loading.
-*   NumPy & SciPy: Numerical operations and sparse matrix handling.
-*   Matplotlib: Generation of performance benchmarking graphs.
+*   **Python 3.12:** Core logic and analysis engine.
+*   **Scikit-Learn:** Random Forest implementation and TF-IDF vectorization.
+*   **Flask:** Web server and REST API for the dashboard.
+*   **Joblib:** Model serialization and loading.
+*   **NumPy & SciPy:** Numerical operations and sparse matrix handling.
+*   **Matplotlib:** Generation of performance benchmarking graphs.
 
 ### Frontend
-*   HTML5 / CSS3: Custom "Dark Mode" UI without external CSS frameworks.
-*   Vanilla JavaScript: Real-time asynchronous communication with the Flask API.
+*   **HTML5 / CSS3:** Custom "Dark Mode" UI without external CSS frameworks.
+*   **Vanilla JavaScript:** Real-time communication with the Flask API.
 
 ### Security Domain
-*   Custom Lexer: Built with regular expressions for high-speed pattern matching.
-*   Hybrid Pipeline: Combines static signatures with semantic AI analysis.
+*   **Custom Lexer:** Built with regular expressions for high-speed pattern matching.
+*   **Hybrid Pipeline:** Combines static signatures with semantic AI analysis.
 
 ## Architecture
 
 The system operates in a three-stage pipeline:
-1.  Static Layer: Scans code for dangerous patterns using Regex and Keyword matching.
-2.  ML Layer: A Random Forest model (trained on 23k+ samples) analyzes the "semantics" of suspicious code blocks using TF-IDF features.
-3.  Reporting Layer: Groups findings and maps them to industry-standard remediation strategies (OWASP/SANS).
+1.  **Static Layer:** Scans code for dangerous patterns using Regex and Keyword matching.
+2.  **ML Layer:** A Random Forest model (trained on 23k+ synthetic samples) analyzes the "semantics" of suspicious code blocks using TF-IDF features.
+3.  **Reporting Layer:** Groups findings and maps them to industry-standard remediation strategies (OWASP/SANS).
 
 ## Installation
 
@@ -95,11 +95,11 @@ Our tests show the efficiency of the Surgical Hybrid approach compared to pure A
 
 ## Project Structure
 
-*   `src/security/`: Core detection logic (Static, AI, and Hybrid Analyzers).
-*   `src/ml/`: Machine Learning pipeline (Preprocessing and Training).
-*   `src/utils/`: Reporting and Benchmarking tools.
-*   `web/`: Flask-based dashboard files.
-*   `test_files/`: Sample Java files for testing.
+*   **`src/security/`:** Core detection logic (Static, AI, and Hybrid Analyzers).
+*   **`src/ml/`:** Machine Learning pipeline (Preprocessing and Training).
+*   **`src/utils/`:** Reporting and Benchmarking tools.
+*   **`web/`:** Flask-based dashboard files.
+*   **`test_files/`:** Sample Java files for testing.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
