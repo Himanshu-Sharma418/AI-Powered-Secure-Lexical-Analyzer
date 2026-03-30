@@ -1,9 +1,13 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from security.hybrid_analyzer import HybridAnalyzer
-from utils.report_generator import ReportGenerator
+# Ensure project root is in the Python path
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+from src.security.hybrid_analyzer import HybridAnalyzer
+from src.utils.report_generator import ReportGenerator
 
 class SecurityAuditor:
     """Main Auditor class that orchestrates analysis and reporting"""
@@ -35,22 +39,22 @@ if __name__ == "__main__":
     else:
         code = """
         public class TestApp {
-        public void process(String data) {
-            // Some safe code here
-            int x = 10;
-            System.out.println("Processing...");
-            
-            // A SQL Injection hotspot
-            String query = "SELECT * FROM users WHERE name = '" + data + "'";
-            db.execute(query);
-            
-            // More safe code
-            log.info("Finished database op");
-            
-            // A Command Injection hotspot
-            Runtime.getRuntime().exec("ping " + data);
+            public void process(String data) {
+                // Some safe code here
+                int x = 10;
+                System.out.println("Processing...");
+                
+                // A SQL Injection hotspot
+                String query = "SELECT * FROM users WHERE name = '" + data + "'";
+                db.execute(query);
+                
+                // More safe code
+                log.info("Finished database op");
+                
+                // A Command Injection hotspot
+                Runtime.getRuntime().exec("ping " + data);
+            }
         }
-    }
         """
 
     auditor.run(code)

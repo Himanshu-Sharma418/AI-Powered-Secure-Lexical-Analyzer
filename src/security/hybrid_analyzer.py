@@ -1,7 +1,11 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+# Add project root to path
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
 from src.security.static_analyzer import StaticAnalyzer
 from src.security.ai_analyzer import AIAnalyzer
 
@@ -27,7 +31,7 @@ class HybridAnalyzer:
         # Iterate through Static hits
         for vuln_type, detected_lines in static_line_info.items():
             for line_num in detected_lines:
-                # Context Window Extraction
+                # Context Window Extraction (The local view)
                 # (Extract 5 lines above and 5 lines below the hit)
                 start_idx = max(0, line_num - 5)
                 end_idx = min(len(lines), line_num + 5)
@@ -78,31 +82,21 @@ class HybridAnalyzer:
             print("-" * 80)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        with open(sys.argv[1]) as f:
-            code = f.read()
-    else:
-        code = """
-    public class TestApp {
-        public void process(String data) {
-            // Some safe code here
-            int x = 10;
-            System.out.println("Processing...");
-            
-            // A SQL Injection hotspot
-            String query = "SELECT * FROM users WHERE name = '" + data + "'";
-            db.execute(query);
-            
-            // More safe code
-            log.info("Finished database op");
-            
-            // A Command Injection hotspot
-            Runtime.getRuntime().exec("ping " + data);
-        }
-    }
-    """ 
-    
     analyzer = HybridAnalyzer()
     
-    results = analyzer.analyze(code)
+    test_code = """
+    public class HybridTest {
+        public void test(String input) {
+            // Hotspot 1: Real SQLi
+            String query = "SELECT * FROM users WHERE id='" + input + "'";
+            db.execute(query);
+            
+            // Hotspot 2: Safe String concat
+            String logMsg = "User " + input + " logged in.";
+            System.out.println(logMsg);
+        }
+    }
+    """
+    
+    results = analyzer.analyze(test_code)
     analyzer.print_report(results)

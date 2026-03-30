@@ -2,34 +2,27 @@ import json
 from collections import defaultdict
 
 class ReportGenerator:
-    """Generates security reports with remediation advice"""
+    """Generates grouped security reports with remediation advice"""
     
     def __init__(self):
         # Professional remediation database
         self.solutions = {
             'SQL Injection': {
                 'title': 'Use Parameterized Queries (PreparedStatements)',
-                'description': 'Never concatenate user input directly into SQL strings. This allows attackers to "break out" of the query and execute arbitrary SQL commands.',
+                'description': 'Never concatenate user input directly into SQL strings.',
                 'fix': 'Use the PreparedStatement API to safely bind variables.',
                 'example': [
-                    '// VULNERABLE',
-                    'String query = "SELECT * FROM users WHERE id = \'" + input + "\'";',
-                    '',
                     '// SECURE (Fix)',
                     'String query = "SELECT * FROM users WHERE id = ?";',
                     'PreparedStatement pstmt = connection.prepareStatement(query);',
-                    'pstmt.setString(1, input);',
-                    'ResultSet rs = pstmt.executeQuery();'
+                    'pstmt.setString(1, input);'
                 ]
             },
             'Cross-Site Scripting (XSS)': {
                 'title': 'Implement Output Encoding',
-                'description': 'User-provided data must be encoded before being rendered in the browser to prevent it from being interpreted as active content (like <script> tags).',
+                'description': 'User-provided data must be encoded before being rendered in the browser.',
                 'fix': 'Use a trusted library like OWASP Java Encoder for context-aware encoding.',
                 'example': [
-                    '// VULNERABLE',
-                    'writer.println("<div>" + userInput + "</div>");',
-                    '',
                     '// SECURE (Fix)',
                     'import org.owasp.encoder.Encode;',
                     'writer.println("<div>" + Encode.forHtml(userInput) + "</div>");'
@@ -37,12 +30,9 @@ class ReportGenerator:
             },
             'Command Injection': {
                 'title': 'Use Parameterized Process Execution',
-                'description': 'Executing shell commands with concatenated strings allows attackers to append their own commands using separators like ; or &&.',
-                'fix': 'Use ProcessBuilder and pass arguments as a separate list, which prevents shell interpretation.',
+                'description': 'Executing shell commands with concatenated strings allows shell injection.',
+                'fix': 'Use ProcessBuilder and pass arguments as a separate list.',
                 'example': [
-                    '// VULNERABLE',
-                    'Runtime.getRuntime().exec("git checkout " + branchName);',
-                    '',
                     '// SECURE (Fix)',
                     'ProcessBuilder pb = new ProcessBuilder("git", "checkout", branchName);',
                     'pb.start();'
@@ -50,41 +40,64 @@ class ReportGenerator:
             }
         }
 
+        # Normalization mapping (XSS -> Cross-Site Scripting (XSS))
+        self.type_mapping = {
+            'XSS': 'Cross-Site Scripting (XSS)',
+            'SQLI': 'SQL Injection',
+            'SQL INJECTION': 'SQL Injection',
+            'COMMAND INJECTION': 'Command Injection'
+        }
+
+    def _get_solution(self, vuln_type):
+        """Helper to find a solution even if the name varies slightly"""
+        # Try direct match
+        if vuln_type in self.solutions:
+            return self.solutions[vuln_type]
+        
+        # Try normalization mapping
+        norm_type = self.type_mapping.get(vuln_type.upper())
+        if norm_type:
+            return self.solutions.get(norm_type)
+            
+        return None
+
     def generate_console_report(self, results):
-        """Prints a remediation report to the console"""
+        """Prints a grouped remediation report to the console"""
         if not results:
             print("No vulnerabilities detected.")
             return
 
         print("=" * 80)
-        print("SECURITY ANALYSIS REPORT")
+        print("SECURITY ANALYSIS REPORT (Grouped by Type)")
         print("=" * 80)
 
-        # Group results by vulnerability type
         grouped_results = defaultdict(list)
         for r in results:
             grouped_results[r['type']].append(r)
 
         for vuln_type, occurrences in grouped_results.items():
-            print(f"\n>>> VULNERABILITY TYPE: {vuln_type} ({len(occurrences)} occurrences)")
+            solution = self._get_solution(vuln_type)
+            # Use the descriptive name from the solution if possible
+            display_name = solution['title'].split('(')[0] if solution else vuln_type
+            
+            print(f"\n>>> VULNERABILITY: {vuln_type} ({len(occurrences)} occurrences)")
             print("-" * 80)
             
-            # List all occurrences first
             for i, occ in enumerate(occurrences, 1):
                 status_str = f"[{occ['status']}]"
                 print(f"   {i}. Line {occ['line']:<4} | {status_str:<25} | Confidence: {occ['confidence']:.2%}")
                 print(f"      Code: {occ['snippet']}")
             
-            # Provide remediation advice ONLY ONCE for this type
-            solution = self.solutions.get(vuln_type)
             if solution:
-                print(f"\n   --- REMEDIATION FOR {vuln_type.upper()} ---")
+                print(f"\n   --- REMEDIATION ---")
                 print(f"   Title:       {solution['title']}")
                 print(f"   Description: {solution['description']}")
                 print(f"   Recommended: {solution['fix']}")
                 print("\n   Code Example:")
                 for line in solution['example']:
                     print(f"      {line}")
+            else:
+                print(f"\n   No remediation template found for '{vuln_type}'.")
             
             print("-" * 80)
 
@@ -101,19 +114,3 @@ class ReportGenerator:
 
         with open(output_file, 'w') as f:
             json.dump(report_data, f, indent=4)
-        print(f"JSON report saved to: {output_file}")
-
-if __name__ == "__main__":
-    # Example usage for testing
-    dummy_results = [
-        {
-            'type': 'SQL Injection',
-            'line': 10,
-            'status': 'Vulnerable',
-            'confidence': 0.95,
-            'snippet': 'query = "SELECT * FROM users WHERE id=" + id;'
-        }
-    ]
-    
-    gen = ReportGenerator()
-    gen.generate_console_report(dummy_results)

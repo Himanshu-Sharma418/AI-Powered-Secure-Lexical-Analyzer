@@ -4,14 +4,25 @@ import joblib
 import numpy as np
 from scipy.sparse import hstack
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+# Add project root to path
+# Use absolute path to avoid issues with different working directories
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
 from src.ml.feature_extractor import FeatureExtractor
 
 class AIAnalyzer:
     """Exclusive AI-driven vulnerability detector using Random Forest"""
     
-    def __init__(self, model_dir='data/models', processed_dir='data/processed'):
-        # Load the model and all associated metadata
+    def __init__(self, model_dir=None, processed_dir=None):
+        # Standardized path handling
+        if model_dir is None:
+            model_dir = os.path.join(PROJECT_ROOT, 'data/models')
+        if processed_dir is None:
+            processed_dir = os.path.join(PROJECT_ROOT, 'data/processed')
+
+        # Loading the model and all associated metadata
         try:
             self.model = joblib.load(os.path.join(model_dir, 'random_forest_model.joblib'))
             self.le = joblib.load(os.path.join(processed_dir, 'label_encoder.joblib'))
@@ -20,7 +31,6 @@ class AIAnalyzer:
             self.extractor = FeatureExtractor()
             self.initialized = True
         except Exception as e:
-            print(f"Error loading AI model: {e}")
             self.initialized = False
 
     def _get_features(self, snippet):
@@ -79,27 +89,22 @@ class AIAnalyzer:
                 continue
 
             # Get features and predict
-            X = self._get_features(snippet)
-            probabilities = self.model.predict_proba(X)[0]
-            prediction_idx = np.argmax(probabilities)
-            prediction_label = self.le.classes_[prediction_idx]
-            confidence = probabilities[prediction_idx]
+            label, confidence = self.predict_snippet(snippet)
 
             # Only report if it's NOT 'Safe' and confidence is high enough
-            if prediction_label != 'Safe' and confidence > 0.5:
+            if label != 'Safe' and confidence > 0.5:
                 detections.append({
-                    'type': prediction_label,
+                    'type': label,
                     'start_line': start_line,
                     'end_line': end_line,
-                    'confidence': float(confidence),
+                    'confidence': confidence,
                     'snippet_preview': snippet.strip().split('\n')[0][:50] + "..."
                 })
 
         # Remove duplicate detections for the same lines
-        # (Since windows may overlap, we pick the one with highest confidence)
+        # (Since windows overlap, we pick the one with highest confidence)
         unique_detections = []
         if detections:
-            # Simple deduplication: if multiple windows detect same type, group them
             detections.sort(key=lambda x: x['confidence'], reverse=True)
             seen_lines = set()
             for d in detections:
@@ -111,32 +116,18 @@ class AIAnalyzer:
         return unique_detections
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        with open(sys.argv[1]) as f:
-            code = f.read()
-    else:
-        code = """
+    test_code = """
     public class TestApp {
         public void process(String data) {
-            // Some safe code here
-            int x = 10;
-            System.out.println("Processing...");
-            
             // A SQL Injection hotspot
             String query = "SELECT * FROM users WHERE name = '" + data + "'";
             db.execute(query);
-            
-            // More safe code
-            log.info("Finished database op");
-            
-            // A Command Injection hotspot
-            Runtime.getRuntime().exec("ping " + data);
         }
     }
     """
     
     analyzer = AIAnalyzer()
-    results = analyzer.analyze(code)
+    results = analyzer.analyze(test_code)
     
     print(f"AI Analysis Results ({len(results)} vulnerabilities found):")
     for r in results:
