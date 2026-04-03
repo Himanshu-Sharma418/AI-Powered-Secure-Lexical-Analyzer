@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Lexical Analyzer | AI Auditor</title>
+    <title>AI Powered Secure Lexical Analyzer</title>
     <style>
         :root {
             /* Dark Mode (Default) */
@@ -147,6 +147,15 @@
             font-size: 12px;
         }
 
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            margin-top: 8px;
+        }
+
         .vuln-card {
             margin: 1rem;
             padding: 1rem;
@@ -214,6 +223,21 @@
             padding: 10px;
             border-radius: 4px;
             border-left: 2px solid var(--accent);
+        }
+
+        .example-box {
+            display: none;
+            background: var(--editor-bg);
+            color: var(--success);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            margin-top: 10px;
+            white-space: pre;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            transition: background 0.3s, color 0.3s;
         }
 
         .status-summary {
@@ -354,6 +378,18 @@
             }
         });
 
+        function toggleExample(id) {
+            const el = document.getElementById(id);
+            const btn = document.getElementById('btn-' + id);
+            if (el.style.display === 'block') {
+                el.style.display = 'none';
+                btn.innerText = 'View Secure Example';
+            } else {
+                el.style.display = 'block';
+                btn.innerText = 'Hide Example';
+            }
+        }
+
         function renderResults(data) {
             if (data.results.length === 0) {
                 welcomeMsg.style.display = 'block';
@@ -369,10 +405,13 @@
                 </div>
             `;
 
-            data.results.forEach(res => {
+            data.results.forEach((res, index) => {
                 const isPotential = res.status === 'Potentially Vulnerable';
                 const card = document.createElement('div');
                 card.className = `vuln-card ${isPotential ? 'potential' : ''}`;
+
+                const exampleId = `ex-${index}`;
+                const exampleCode = res.remediation.example ? res.remediation.example.join('\n') : '// No example available';
 
                 card.innerHTML = `
                     <div class="vuln-header">
@@ -391,6 +430,9 @@
                         <div style="font-weight: 700; color: var(--accent); margin-bottom: 5px;">Fix Suggestion:</div>
                         ${res.remediation.title || 'No title'}
                         <div style="margin-top: 5px; font-size: 12px; opacity: 0.8;">${res.remediation.fix || 'No fix suggested'}</div>
+                        
+                        <button id="btn-${exampleId}" class="btn btn-sm" onclick="toggleExample('${exampleId}')">View Secure Example</button>
+                        <div id="${exampleId}" class="example-box">${exampleCode}</div>
                     </div>
                 `;
                 cardsContainer.appendChild(card);
