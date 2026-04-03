@@ -7,6 +7,7 @@
     <title>Secure Lexical Analyzer | AI Auditor</title>
     <style>
         :root {
+            /* Dark Mode (Default) */
             --bg-primary: #0f172a;
             --bg-secondary: #1e293b;
             --accent: #3b82f6;
@@ -17,6 +18,23 @@
             --success: #22c55e;
             --card-bg: #1e293b;
             --border: #334155;
+            --editor-bg: #0b1121;
+            --code-text: #d1d5db;
+        }
+
+        body.light-mode {
+            --bg-primary: #f1f5f9;
+            --bg-secondary: #ffffff;
+            --accent: #2563eb;
+            --text-main: #0f172a;
+            --text-dim: #475569;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --success: #16a34a;
+            --card-bg: #ffffff;
+            --border: #cbd5e1;
+            --editor-bg: #ffffff;
+            --code-text: #1e293b;
         }
 
         * {
@@ -30,6 +48,7 @@
             background: var(--bg-primary);
             color: var(--text-main);
             overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
         }
 
         /* Layout */
@@ -46,6 +65,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: background 0.3s, border-color 0.3s;
         }
 
         .main-content {
@@ -60,13 +80,14 @@
             display: flex;
             flex-direction: column;
             padding: 1.5rem;
-            background: #0b1121;
+            background: var(--editor-bg);
+            transition: background 0.3s;
         }
 
         #code-input {
             flex: 1;
             background: transparent;
-            color: #d1d5db;
+            color: var(--code-text);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1rem;
@@ -75,6 +96,7 @@
             line-height: 1.6;
             resize: none;
             outline: none;
+            transition: border-color 0.3s, color 0.3s;
         }
 
         .controls {
@@ -91,12 +113,13 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            transition: background 0.3s, border-color 0.3s;
         }
 
         .panel-header {
             padding: 1rem;
             border-bottom: 1px solid var(--border);
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.05);
         }
 
         /* Cards & UI Elements */
@@ -116,17 +139,23 @@
             transform: translateY(-1px);
         }
 
-        .btn:active {
-            transform: translateY(0);
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            font-size: 12px;
         }
 
         .vuln-card {
             margin: 1rem;
             padding: 1rem;
             border-radius: 8px;
-            background: #0f172a;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
             border-left: 4px solid var(--danger);
             animation: slideIn 0.3s ease-out;
+            transition: background 0.3s, border-color 0.3s;
         }
 
         .vuln-card.potential {
@@ -156,7 +185,7 @@
 
         .confidence-meter {
             height: 4px;
-            background: #334155;
+            background: var(--border);
             margin: 10px 0;
             border-radius: 2px;
             overflow: hidden;
@@ -168,14 +197,15 @@
         }
 
         .snippet-box {
-            background: #1e293b;
+            background: var(--bg-secondary);
             padding: 8px;
             border-radius: 4px;
             font-family: monospace;
             font-size: 12px;
             margin: 10px 0;
-            border: 1px solid #334155;
+            border: 1px solid var(--border);
             white-space: pre-wrap;
+            color: var(--code-text);
         }
 
         .remediation-box {
@@ -190,9 +220,10 @@
             display: flex;
             gap: 1rem;
             padding: 1rem;
-            background: #0f172a;
+            background: var(--bg-primary);
             margin: 1rem;
             border-radius: 8px;
+            border: 1px solid var(--border);
         }
 
         .stat {
@@ -238,8 +269,8 @@
                 <span style="font-weight: 400; font-size: 1.2rem; color: var(--text-dim);">LEXICAL ANALYZER</span>
             </div>
             <div class="actions">
-                <span id="scan-status" style="font-size: 12px; color: var(--text-dim); margin-right: 1rem;">System
-                    Ready</span>
+                <button id="theme-toggle" class="btn btn-outline" style="margin-right: 1rem;">Toggle Light Mode</button>
+                <span id="scan-status" style="font-size: 12px; color: var(--text-dim);">System Ready</span>
             </div>
         </header>
 
@@ -271,6 +302,7 @@
 
     <script>
         const scanBtn = document.getElementById('scan-btn');
+        const themeToggle = document.getElementById('theme-toggle');
         const codeInput = document.getElementById('code-input');
         const cardsContainer = document.getElementById('cards-container');
         const summaryContainer = document.getElementById('summary-container');
@@ -278,11 +310,24 @@
         const loader = document.getElementById('loader');
         const scanStatus = document.getElementById('scan-status');
 
+        // Theme Toggle Logic
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            themeToggle.innerText = isLight ? 'Toggle Dark Mode' : 'Toggle Light Mode';
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        });
+
+        // Load saved theme
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+            themeToggle.innerText = 'Toggle Dark Mode';
+        }
+
         scanBtn.addEventListener('click', async () => {
             const code = codeInput.value;
             if (!code.trim()) return;
 
-            // UI State
             welcomeMsg.style.display = 'none';
             loader.style.display = 'block';
             scanBtn.disabled = true;
@@ -316,7 +361,6 @@
                 return;
             }
 
-            // Summary
             summaryContainer.innerHTML = `
                 <div class="status-summary">
                     <div class="stat"><span class="stat-val">${data.summary.total}</span><span class="stat-label">Total</span></div>
@@ -325,7 +369,6 @@
                 </div>
             `;
 
-            // Cards
             data.results.forEach(res => {
                 const isPotential = res.status === 'Potentially Vulnerable';
                 const card = document.createElement('div');
@@ -346,15 +389,14 @@
                     
                     <div class="remediation-box">
                         <div style="font-weight: 700; color: var(--accent); margin-bottom: 5px;">Fix Suggestion:</div>
-                        ${res.remediation.title}
-                        <div style="margin-top: 5px; font-size: 12px; opacity: 0.8;">${res.remediation.fix}</div>
+                        ${res.remediation.title || 'No title'}
+                        <div style="margin-top: 5px; font-size: 12px; opacity: 0.8;">${res.remediation.fix || 'No fix suggested'}</div>
                     </div>
                 `;
                 cardsContainer.appendChild(card);
             });
         }
 
-        // Add some default code for demo
         codeInput.value = `public class DatabaseTest {
     public void getUser(String userId) {
         // Vulnerable SQL Injection

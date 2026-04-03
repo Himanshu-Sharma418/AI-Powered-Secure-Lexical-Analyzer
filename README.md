@@ -21,7 +21,7 @@ An advanced analysis tool that combines Deterministic Rule-Based Detection with 
 *   **Matplotlib:** Generation of performance benchmarking graphs.
 
 ### Frontend
-*   **HTML5 / CSS3:** Custom "Dark Mode" UI without external CSS frameworks.
+*   **HTML5 / CSS3:** Custom UI (Dark and Light) without external CSS frameworks.
 *   **Vanilla JavaScript:** Real-time communication with the Flask API.
 
 ### Security Domain
