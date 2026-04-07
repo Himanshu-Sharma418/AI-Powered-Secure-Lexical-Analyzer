@@ -5,6 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Powered Secure Lexical Analyzer</title>
+
+    <!-- CodeMirror Base -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <!-- CodeMirror Themes -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-ocean.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/neo.min.css">
+
     <style>
         :root {
             /* Dark Mode (Default) */
@@ -19,7 +27,6 @@
             --card-bg: #1e293b;
             --border: #334155;
             --editor-bg: #0b1121;
-            --code-text: #d1d5db;
         }
 
         body.light-mode {
@@ -34,7 +41,6 @@
             --card-bg: #ffffff;
             --border: #cbd5e1;
             --editor-bg: #ffffff;
-            --code-text: #1e293b;
         }
 
         * {
@@ -47,7 +53,8 @@
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg-primary);
             color: var(--text-main);
-            overflow-x: hidden;
+            overflow: hidden;
+            height: 100vh;
             transition: background 0.3s, color 0.3s;
         }
 
@@ -65,6 +72,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
             transition: background 0.3s, border-color 0.3s;
         }
 
@@ -75,28 +83,49 @@
             overflow: hidden;
         }
 
-        /* Left Side: Editor */
+        /* Editor Section */
         .editor-container {
             display: flex;
             flex-direction: column;
             padding: 1.5rem;
             background: var(--editor-bg);
             transition: background 0.3s;
+            overflow: hidden;
+            min-height: 0;
         }
 
-        #code-input {
+        #editor-anchor {
             flex: 1;
-            background: transparent;
-            color: var(--code-text);
-            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        /* CodeMirror Customization */
+        .CodeMirror {
+            flex: 1;
+            height: auto !important;
             border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            resize: none;
-            outline: none;
-            transition: border-color 0.3s, color 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        /* Standardize EVERY text-related property to prevent theme-jumping */
+        .CodeMirror,
+        .CodeMirror pre.CodeMirror-line,
+        .CodeMirror-linenumber,
+        .CodeMirror-code,
+        .CodeMirror-line>span {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+            font-weight: 400 !important;
+            letter-spacing: normal !important;
+            font-variant-ligatures: none !important;
+        }
+
+        .CodeMirror-cursor {
+            border-left: 1px solid var(--text-main) !important;
+            width: 0 !important;
         }
 
         .controls {
@@ -104,9 +133,10 @@
             display: flex;
             gap: 1rem;
             align-items: center;
+            flex-shrink: 0;
         }
 
-        /* Right Side: Results */
+        /* Results Panel */
         .results-panel {
             background: var(--bg-secondary);
             border-left: 1px solid var(--border);
@@ -120,9 +150,10 @@
             padding: 1rem;
             border-bottom: 1px solid var(--border);
             background: rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
         }
 
-        /* Cards & UI Elements */
+        /* Components */
         .btn {
             background: var(--accent);
             color: white;
@@ -171,12 +202,6 @@
             border-left-color: var(--warning);
         }
 
-        .vuln-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
         .type-badge {
             font-size: 11px;
             text-transform: uppercase;
@@ -214,7 +239,6 @@
             margin: 10px 0;
             border: 1px solid var(--border);
             white-space: pre-wrap;
-            color: var(--code-text);
         }
 
         .remediation-box {
@@ -248,6 +272,7 @@
             margin: 1rem;
             border-radius: 8px;
             border: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
         .stat {
@@ -299,57 +324,72 @@
         </header>
 
         <div class="main-content">
-            <!-- Left: Editor -->
             <div class="editor-container">
-                <textarea id="code-input" spellcheck="false" placeholder="// Paste your Java code here..."></textarea>
+                <div id="editor-anchor"></div>
                 <div class="controls">
                     <button id="scan-btn" class="btn">Analyze Code</button>
                     <div id="loader" style="font-size: 13px; color: var(--accent);">Processing with Hybrid AI...</div>
                 </div>
             </div>
 
-            <!-- Right: Results -->
             <div class="results-panel" id="results-panel">
                 <div class="panel-header">
                     <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Security Findings</h3>
                 </div>
-
                 <div id="welcome-message" style="padding: 2rem; text-align: center; color: var(--text-dim);">
                     <p>Enter code and click "Analyze" to begin the AI-powered security audit.</p>
                 </div>
-
                 <div id="summary-container"></div>
                 <div id="cards-container"></div>
             </div>
         </div>
     </div>
 
+    <!-- CodeMirror Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
+
     <script>
         const scanBtn = document.getElementById('scan-btn');
         const themeToggle = document.getElementById('theme-toggle');
-        const codeInput = document.getElementById('code-input');
         const cardsContainer = document.getElementById('cards-container');
         const summaryContainer = document.getElementById('summary-container');
         const welcomeMsg = document.getElementById('welcome-message');
         const loader = document.getElementById('loader');
         const scanStatus = document.getElementById('scan-status');
 
+        // Initialize CodeMirror
+        const editor = CodeMirror(document.getElementById('editor-anchor'), {
+            value: `public class DatabaseTest {\n    public void getUser(String userId) {\n        // Vulnerable SQL Injection\n        String sql = "SELECT * FROM users WHERE id = '" + userId + "'";\n        db.execute(sql);\n    }\n}`,
+            mode: "text/x-java",
+            theme: "material-ocean",
+            lineNumbers: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            lineWrapping: true
+        });
+
         // Theme Toggle Logic
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
             const isLight = document.body.classList.contains('light-mode');
+            editor.setOption('theme', isLight ? 'neo' : 'material-ocean');
             themeToggle.innerText = isLight ? 'Toggle Dark Mode' : 'Toggle Light Mode';
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
+
+            // Refresh editor to ensure layout recalculation
+            setTimeout(() => editor.refresh(), 10);
         });
 
-        // Load saved theme
         if (localStorage.getItem('theme') === 'light') {
             document.body.classList.add('light-mode');
+            editor.setOption('theme', 'neo');
             themeToggle.innerText = 'Toggle Dark Mode';
         }
 
         scanBtn.addEventListener('click', async () => {
-            const code = codeInput.value;
+            const code = editor.getValue();
             if (!code.trim()) return;
 
             welcomeMsg.style.display = 'none';
@@ -370,7 +410,7 @@
                 renderResults(data);
             } catch (err) {
                 console.error(err);
-                alert('Analysis failed. Check backend connection.');
+                alert('Analysis failed.');
             } finally {
                 loader.style.display = 'none';
                 scanBtn.disabled = false;
@@ -393,7 +433,7 @@
         function renderResults(data) {
             if (data.results.length === 0) {
                 welcomeMsg.style.display = 'block';
-                welcomeMsg.innerHTML = '<p style="color: var(--success)">No vulnerabilities detected. Good job!</p>';
+                welcomeMsg.innerHTML = '<p style="color: var(--success)">No vulnerabilities detected.</p>';
                 return;
             }
 
@@ -423,14 +463,11 @@
                         <div class="confidence-fill" style="width: ${res.confidence * 100}%"></div>
                     </div>
                     <div style="font-size: 11px; color: var(--text-dim)">AI Confidence: ${(res.confidence * 100).toFixed(1)}%</div>
-                    
                     <div class="snippet-box">${res.snippet}</div>
-                    
                     <div class="remediation-box">
                         <div style="font-weight: 700; color: var(--accent); margin-bottom: 5px;">Fix Suggestion:</div>
                         ${res.remediation.title || 'No title'}
                         <div style="margin-top: 5px; font-size: 12px; opacity: 0.8;">${res.remediation.fix || 'No fix suggested'}</div>
-                        
                         <button id="btn-${exampleId}" class="btn btn-sm" onclick="toggleExample('${exampleId}')">View Secure Example</button>
                         <div id="${exampleId}" class="example-box">${exampleCode}</div>
                     </div>
@@ -438,14 +475,6 @@
                 cardsContainer.appendChild(card);
             });
         }
-
-        codeInput.value = `public class DatabaseTest {
-    public void getUser(String userId) {
-        // Vulnerable SQL Injection
-        String sql = "SELECT * FROM users WHERE id = '" + userId + "'";
-        db.execute(sql);
-    }
-}`;
     </script>
 </body>
 
