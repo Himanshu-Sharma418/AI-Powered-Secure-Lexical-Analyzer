@@ -27,6 +27,7 @@
             --card-bg: #1e293b;
             --border: #334155;
             --editor-bg: #0b1121;
+            --gutter-text: #4b5563;
         }
 
         body.light-mode {
@@ -41,6 +42,8 @@
             --card-bg: #ffffff;
             --border: #cbd5e1;
             --editor-bg: #ffffff;
+            --code-text: #1e293b;
+            --gutter-text: #94a3b8;
         }
 
         * {
@@ -109,18 +112,15 @@
             border: 1px solid var(--border);
         }
 
-        /* Standardize EVERY text-related property to prevent theme-jumping */
         .CodeMirror,
         .CodeMirror pre.CodeMirror-line,
         .CodeMirror-linenumber,
         .CodeMirror-code,
         .CodeMirror-line>span {
-            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
             font-size: 14px !important;
             line-height: 1.6 !important;
             font-weight: 400 !important;
-            letter-spacing: normal !important;
-            font-variant-ligatures: none !important;
         }
 
         .CodeMirror-cursor {
@@ -185,6 +185,14 @@
             color: var(--accent);
             border: 1px solid var(--accent);
             margin-top: 8px;
+            border-radius: 4px;
+        }
+
+        .btn-heal {
+            background: var(--success);
+            color: white;
+            border: none;
+            margin-left: 5px;
         }
 
         .vuln-card {
@@ -370,6 +378,9 @@
             lineWrapping: true
         });
 
+        // Current results storage for healing
+        let currentFindings = [];
+
         // Theme Toggle Logic
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
@@ -377,8 +388,6 @@
             editor.setOption('theme', isLight ? 'neo' : 'material-ocean');
             themeToggle.innerText = isLight ? 'Toggle Dark Mode' : 'Toggle Light Mode';
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
-
-            // Refresh editor to ensure layout recalculation
             setTimeout(() => editor.refresh(), 10);
         });
 
@@ -407,6 +416,7 @@
                 });
 
                 const data = await response.json();
+                currentFindings = data.results;
                 renderResults(data);
             } catch (err) {
                 console.error(err);
@@ -430,6 +440,25 @@
             }
         }
 
+        function applyFix(index) {
+            const finding = currentFindings[index];
+            if (!finding || !finding.suggested_fix) return;
+
+            // Line numbers are 1-based, CodeMirror lines are 0-based
+            const line = finding.line - 1;
+            
+            // Using replaceRange ensures CodeMirror handles the multi-line insertion correctly
+            editor.replaceRange(
+                finding.suggested_fix, 
+                { line: line, ch: 0 }, 
+                { line: line, ch: editor.getLine(line).length }
+            );
+            
+            alert('Assisted Patch Applied to Line ' + finding.line);
+            
+            // Re-scan automatically
+            scanBtn.click();
+        }
         function renderResults(data) {
             if (data.results.length === 0) {
                 welcomeMsg.style.display = 'block';
@@ -453,6 +482,11 @@
                 const exampleId = `ex-${index}`;
                 const exampleCode = res.remediation.example ? res.remediation.example.join('\n') : '// No example available';
 
+                let fixButtonHtml = '';
+                if (res.suggested_fix) {
+                    fixButtonHtml = `<button class="btn btn-sm btn-heal" onclick="applyFix(${index})">Apply AI Auto-Fix</button>`;
+                }
+
                 card.innerHTML = `
                     <div class="vuln-header">
                         <span class="type-badge">${res.type}</span>
@@ -468,7 +502,11 @@
                         <div style="font-weight: 700; color: var(--accent); margin-bottom: 5px;">Fix Suggestion:</div>
                         ${res.remediation.title || 'No title'}
                         <div style="margin-top: 5px; font-size: 12px; opacity: 0.8;">${res.remediation.fix || 'No fix suggested'}</div>
-                        <button id="btn-${exampleId}" class="btn btn-sm" onclick="toggleExample('${exampleId}')">View Secure Example</button>
+                        
+                        <div style="margin-top: 10px;">
+                            <button id="btn-${exampleId}" class="btn btn-sm" onclick="toggleExample('${exampleId}')">View Secure Example</button>
+                            ${fixButtonHtml}
+                        </div>
                         <div id="${exampleId}" class="example-box">${exampleCode}</div>
                     </div>
                 `;

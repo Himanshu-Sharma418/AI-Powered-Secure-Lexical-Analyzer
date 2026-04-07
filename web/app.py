@@ -17,19 +17,21 @@ sys.path.append(PROJECT_ROOT)
 
 from src.security.hybrid_analyzer import HybridAnalyzer
 from src.utils.report_generator import ReportGenerator
+from src.security.healer import CodeHealer
 
 app = Flask(__name__, 
             template_folder=os.path.join(PROJECT_ROOT, 'web/templates'),
             static_folder=os.path.join(PROJECT_ROOT, 'web/static'))
 
-# Initialize the analyzer once at startup
-logger.info("Initializing Hybrid AI Analyzer (Loading Models)...")
+# Initialize components
+logger.info("Initializing Hybrid AI Analyzer & Healer...")
 try:
     analyzer = HybridAnalyzer()
     generator = ReportGenerator()
-    logger.info("System Ready: Models loaded successfully.")
+    healer = CodeHealer()
+    logger.info("System Ready: Models and Healer loaded.")
 except Exception as e:
-    logger.error(f"Failed to initialize analyzer: {e}")
+    logger.error(f"Failed to initialize system: {e}")
     sys.exit(1)
 
 @app.route('/')
@@ -47,14 +49,25 @@ def analyze_code():
         
     logger.info(f"Analysis Started: Received {len(code.splitlines())} lines of code.")
     
-    # 1. Run the Hybrid Analysis
+    # Run the Hybrid Analysis
     results = analyzer.analyze(code)
     
-    # 2. Enrich results with remediation advice
+    # Split code to get full lines for indentation preservation
+    code_lines = code.splitlines()
+    
+    # Enrich results with remediation and suggested fixes
     enriched_results = []
     for r in results:
         vuln_type = r['type']
         remediation = generator._get_solution(vuln_type) or {}
+        
+        # Get the EXACT line from the original code (with indentation)
+        # line numbers are 1-based
+        line_idx = r['line'] - 1
+        full_original_line = code_lines[line_idx] if 0 <= line_idx < len(code_lines) else r['snippet']
+        
+        # Generate suggested fix using the full line
+        suggested_fix = healer.suggest_fix(vuln_type, full_original_line)
         
         logger.info(f"Detection: Found {vuln_type} at line {r['line']} (Confidence: {r['confidence']:.2%})")
         
@@ -64,7 +77,8 @@ def analyze_code():
             'status': r['status'],
             'confidence': r['confidence'],
             'snippet': r['snippet'],
-            'remediation': remediation
+            'remediation': remediation,
+            'suggested_fix': suggested_fix
         })
     
     summary = {
