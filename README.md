@@ -7,8 +7,10 @@ An advanced analysis tool that combines Deterministic Rule-Based Detection with 
 *   **Hybrid Analysis Pipeline:** Uses a high-speed Lexical Analyzer to find "hotspots" and a Random Forest model to verify them.
 *   **Surgical Precision:** AI only analyzes the specific context around suspicious lines, reducing false positives.
 *   **Sanitization Suggestions:** Automatically generates security advice and "Secure Code" examples for every finding.
+*   **Self-Healing:** Has the ability to fix simple SQLi and Command Injection vulnerabilities.
 *   **Modern Web Dashboard:** A sleek, dark-mode interface for real-time code auditing.
 *   **Performance Benchmarked:** Proven to be 5.4x faster than traditional sliding-window AI scanners.
+*   **Low Carbon Footprint:** Very energy efficient compared to professional industry tools
 
 ## Tech Stack
 
@@ -18,6 +20,7 @@ An advanced analysis tool that combines Deterministic Rule-Based Detection with 
 *   **Flask:** Web server and REST API for the dashboard.
 *   **Joblib:** Model serialization and loading.
 *   **NumPy & SciPy:** Numerical operations and sparse matrix handling.
+*   **CodeCarbon:** Calculate carbon footprint of trained AI.
 *   **Matplotlib:** Generation of performance benchmarking graphs.
 
 ### Frontend
@@ -34,6 +37,7 @@ The system operates in a three-stage pipeline:
 1.  **Static Layer:** Scans code for dangerous patterns using Regex and Keyword matching.
 2.  **ML Layer:** A Random Forest model (trained on 23k+ synthetic samples) analyzes the "semantics" of suspicious code blocks using TF-IDF features.
 3.  **Reporting Layer:** Groups findings and maps them to industry-standard remediation strategies (OWASP/SANS).
+4.  **Self Healing Layer:** Attemps to self heal some simple vulnerabilities of SQL Injection and Command Injection.
 
 ## Installation
 
