@@ -61,13 +61,7 @@ def analyze_code():
         vuln_type = r['type']
         remediation = generator._get_solution(vuln_type) or {}
         
-        # Get the EXACT line from the original code (with indentation)
-        # line numbers are 1-based
-        line_idx = r['line'] - 1
-        full_original_line = code_lines[line_idx] if 0 <= line_idx < len(code_lines) else r['snippet']
-        
-        # Generate suggested fix using the full line
-        suggested_fix = healer.suggest_fix(vuln_type, full_original_line)
+        suggested_fix = healer.suggest_fix(vuln_type, code, r['line'])
         
         logger.info(f"Detection: Found {vuln_type} at line {r['line']} (Confidence: {r['confidence']:.2%})")
         
